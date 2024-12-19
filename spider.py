@@ -10,7 +10,8 @@ time.sleep(2)
 
 # 设置目标URL
 url = 'https://mzj.beijing.gov.cn/col/col10696/index.html###'
-
+#url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
+#url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
 # 打开目标网页
 browser.get(url)
 time.sleep(2)
@@ -31,7 +32,6 @@ def get_page_link():
 def get_page_data(link):
     # 处理相对路径URL：若是相对路径，拼接成完整URL
     href = link['href']
-    print(href)
     name = link.get_text()
     if not href.startswith('http'):
         href = 'https://mzj.beijing.gov.cn' + href
@@ -54,6 +54,9 @@ def get_page_data(link):
         text = data.get_text(separator='\n', strip=True)
     elif soup.find("div", {"id":"UCAP-CONTENT"}):
         data = soup.find("div", {"id": "UCAP-CONTENT"})
+        text = data.get_text(separator='\n', strip=True)
+    elif soup.find("div", class_="bjmz_tyarticle"):
+        data = soup.find("div", class_="bjmz_tyarticle").find("table")
         text = data.get_text(separator='\n', strip=True)
     # 将文本保存到文件中
     with open(name + ".txt", 'w', encoding='utf-8') as f:
