@@ -3,6 +3,7 @@ import time
 from bs4 import BeautifulSoup
 import re
 from selenium.webdriver.support.ui import Select
+import os
 # 设置Chrome驱动路径
 path = './chromedriver.exe'
 browser = webdriver.Chrome(path)
@@ -10,8 +11,8 @@ time.sleep(2)
 
 # 设置目标URL
 #url = 'https://mzj.beijing.gov.cn/col/col10696/index.html###'
-#url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
-url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
+url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
+#url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
 # 打开目标网页
 browser.get(url)
 time.sleep(2)
@@ -66,7 +67,11 @@ def get_page_data(link):
     print(href)
     name = link.get_text()
     name = clean_filename(name)
-    print(name)
+    # 定义文件夹路径
+    folder_path = './content'
+    # 检查文件夹是否存在，如果不存在则创建
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
     if not href.startswith('http'):
         href = 'https://mzj.beijing.gov.cn' + href
 
@@ -76,7 +81,7 @@ def get_page_data(link):
     content = browser.page_source
     # 使用BeautifulSoup解析HTML
     soup = BeautifulSoup(content, 'html.parser')
-    # 提取所有文本内容
+    # 提取文本内容
     if soup.find("div", {"id":"htmlContent"}):
         data = soup.find("div", {"id":"htmlContent"})
         text = data.get_text(separator='\n', strip=True)
@@ -89,12 +94,18 @@ def get_page_data(link):
     elif soup.find("div", {"id":"UCAP-CONTENT"}):
         data = soup.find("div", {"id": "UCAP-CONTENT"})
         text = data.get_text(separator='\n', strip=True)
-    elif soup.find("div", class_="bjmz_tyarticle"):
-        data = soup.find("div", class_="bjmz_tyarticle").find("table")
+    elif soup.find("div", {"id":"zoom"}):
+        data = soup.find("div", {"id":"zoom"})
         text = data.get_text(separator='\n', strip=True)
+    #提取信息项内容
+
     # 将文本保存到文件中
-    with open(f"{name}.txt", 'w', encoding='utf-8') as f:
+    # 构造文件路径
+    file_path = os.path.join(folder_path, f"{name}.txt")
+    with open(file_path, 'w', encoding='utf-8') as f:
        f.write(text)
+
+
 
 total_pages = get_total_pages()
 # 逐页抓取数据
