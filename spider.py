@@ -9,12 +9,19 @@ browser = webdriver.Chrome(path)
 time.sleep(2)
 
 # 设置目标URL
-url = 'https://mzj.beijing.gov.cn/col/col10696/index.html###'
+#url = 'https://mzj.beijing.gov.cn/col/col10696/index.html###'
 #url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
-#url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
+url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
 # 打开目标网页
 browser.get(url)
 time.sleep(2)
+
+#清理文件名中的非法字符
+def clean_filename(filename):
+    # 定义非法字符
+    invalid_chars = r'[\\/:*?"<>|]'
+    # 替换非法字符为下划线
+    return re.sub(invalid_chars, '_', filename)
 
 # 获取当前页面的文件链接
 def get_page_link():
@@ -33,7 +40,7 @@ def click_page(page):
     # 找到选择框并点击所需页数
     browser.get(url)
     select_element = browser.find_element_by_xpath("//select[@class='pager']")
-    # 创建 Select 对象并选择第4页（文本值为 "4"）
+    # 创建 Select 对象并选择页数
     select = Select(select_element)
     select.select_by_visible_text(str(page))
 
@@ -58,6 +65,8 @@ def get_page_data(link):
     href = link['href']
     print(href)
     name = link.get_text()
+    name = clean_filename(name)
+    print(name)
     if not href.startswith('http'):
         href = 'https://mzj.beijing.gov.cn' + href
 
@@ -91,7 +100,6 @@ total_pages = get_total_pages()
 # 逐页抓取数据
 for page_num in range(1, total_pages + 1):
     print(f"抓取第 {page_num} 页数据")
-    click_page(2)
     # 抓取当前页面的数据
     links = get_page_link()
     for link in links:
