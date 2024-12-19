@@ -12,8 +12,8 @@ time.sleep(2)
 
 # 设置目标URL
 #url = 'https://mzj.beijing.gov.cn/col/col10696/index.html###'
-#url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
-url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
+url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
+#url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
 # 打开目标网页
 browser.get(url)
 time.sleep(2)
