@@ -2,6 +2,8 @@ from selenium import webdriver
 import time
 from bs4 import BeautifulSoup
 import re
+
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 import os
 import json
@@ -11,9 +13,13 @@ browser = webdriver.Chrome(path)
 time.sleep(2)
 
 # 设置目标URL
+#民政局
 #url = 'https://mzj.beijing.gov.cn/col/col10696/index.html###'
-url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
+#url = 'https://mzj.beijing.gov.cn/col/col10694/index.html'
 #url = 'https://mzj.beijing.gov.cn/col/col10692/index.html'
+#人社局
+#url = 'https://rsj.beijing.gov.cn/xxgk/2024zcjd/'
+url = 'https://rsj.beijing.gov.cn/xxgk/2024qt/'
 # 打开目标网页
 browser.get(url)
 time.sleep(2)
@@ -32,7 +38,11 @@ def get_page_link():
     soup = BeautifulSoup(content, 'html.parser')
 
     # 提取所有的<a>标签中的href链接
-    links = soup.find('div', class_="bjmz_tylist").find("tr").find_all('a', href=True)
+    links = soup.find('div', class_="bjmz_tylist")
+    if links:
+        links = links.find("tr").find_all('a', href=True)
+    else:
+        links = soup.find('div', class_='listBox').find('ul', class_='list').find_all('a', href=True)
 
     # 返回文件链接
     return links
@@ -41,10 +51,27 @@ def get_page_link():
 def click_page(page):
     # 找到选择框并点击所需页数
     browser.get(url)
-    select_element = browser.find_element_by_xpath("//select[@class='pager']")
-    # 创建 Select 对象并选择页数
-    select = Select(select_element)
-    select.select_by_visible_text(str(page))
+    try:
+        # 判断是否存在下拉框（<select>）选择页数
+        select_element = browser.find_element_by_xpath("//select[@class='pager']")
+
+        # 如果找到下拉框，选择页数
+        select = Select(select_element)
+        select.select_by_visible_text(str(page))
+    except:
+        # 如果没有找到下拉框，寻找“下一页”按钮并点击
+        try:
+            # 找到页数输入框并输入目标页数
+            page_input = browser.find_element(By.ID, "num")
+            page_input.clear()  # 清空输入框
+            page_input.send_keys(str(page))  # 输入目标页数
+
+            # 找到跳转按钮并点击
+            jump_button = browser.find_element(By.XPATH, "//input[@type='submit' and @value='跳转']")
+            jump_button.click()
+        except Exception as e:
+            print(f"未找到‘下一页’按钮或发生错误: {e}")
+
 
 # 获取当前页面总页数
 def get_total_pages():
@@ -53,19 +80,37 @@ def get_total_pages():
     soup = BeautifulSoup(content, 'html.parser')
 
     # 提取总页数信息
-    pagination = soup.find('div', class_="bjmz_tylist").find("table").find_all('tr')[-1].find('td', class_='rowspace')
+    pagination = soup.find('div', class_="bjmz_tylist")
+    if pagination:
+        pagination = pagination.find("table").find_all('tr')[-1].find('td', class_='rowspace')
+    else:
+        script_tags = soup.find('div', class_='changepage').find_all('script')
+        # 遍历所有 <script> 标签
+        for script in script_tags:
+            if "var countPage" in script.string:
+                # 查找 "var countPage = " 和 ";" 之间的内容
+                start_index = script.string.find("var countPage = ") + len("var countPage = ")
+                end_index = script.string.find(";", start_index)
+                total_page_str = script.string[start_index:end_index].strip()
+                # 使用正则表达式提取纯数字部分
+                total_page_str = re.sub(r'\D', '', total_page_str)  # \D 匹配非数字字符，替换为空字符串
+                try:
+                    total_page = int(total_page_str)  # 转换为整数
+                    print(total_page)  # 输出结果
+                    return total_page  # 返回值（可根据实际需要选择是否使用）
+                except ValueError:
+                    print("无法转换为数字:", total_page_str)
+                    return None
     pagination_text = pagination.text.strip()
     match = re.search(r'共 (\d+) 页', pagination_text)
     if match:
         total_pages = int(match.group(1))
-        print(total_pages)
     return total_pages
 
 #获取当前页面文件信息并保存
 def get_page_data(link):
     # 处理相对路径URL：若是相对路径，拼接成完整URL
     href = link['href']
-    print(href)
     name = link.get_text()
     name = clean_filename(name)
     # 定义文件夹路径
@@ -74,7 +119,8 @@ def get_page_data(link):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     if not href.startswith('http'):
-        href = 'https://mzj.beijing.gov.cn' + href
+        href = url + href
+        print(href)
 
     # 打开新链接
     browser.get(href)
