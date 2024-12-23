@@ -217,6 +217,16 @@ def get_page_data(link):
             # 将标签和对应的值保存到字典中
             if label and value:
                 data[label] = value
+    elif soup.find("ol", class_="doc-info"):
+        list_items = soup.find("ol", class_="doc-info").find_all('li')
+        # 遍历每个<li>元素
+        for item in list_items:
+            # 获取每个<li>中的标题和对应的值
+            # 获取标签中的文本
+            label = item.contents[0].strip('[]')  # 去掉方括号
+            value = item.find('span').text if item.find('span') else '无'
+            # 存储到字典中
+            data[label] = value
     # 将文本保存到文件中
     # 构造文件路径
     file_path = os.path.join(folder_path, f"{name}.json")
